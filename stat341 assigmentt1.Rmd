@@ -1,0 +1,464 @@
+---
+title: "stat341 assignment1"
+author: "Yiming Shen 20891774"
+date: "29/01/2023"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Q1
+
+Let $\alpha(P)=\frac{\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{\left[\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3$
+
+### (a)
+Notice that:
+$$
+\begin{aligned}
+\alpha^{'}(P) & = \overline{y} \\
+\alpha^{'}(P+b) & = \overline{y}+b
+\end{aligned}
+$$
+so
+$$
+\begin{aligned}
+\alpha(P+b) & = \alpha(y_1+b,\ldots,y_N+b) \\
+& = \frac{\frac{1}{N}\sum_{u \in P}(y_u+b-\overline{y}-b)^4}
+{\left[\frac{1}{N}\sum_{u \in P}(y_u+b-\overline{y}-b)^2\right]^2}-3 \\
+& = \frac{\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{\left[\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& = \alpha(P)
+\end{aligned}
+$$
+Therefore, it is Location Invariant.
+
+\newpage
+### (b)
+Notice that: when $m>0$
+$$
+\begin{aligned}
+\alpha^{'}(P) & =\overline{y} \\
+\alpha^{'}(m\cdot{P}) & = m\cdot{\overline{y}}
+\end{aligned}
+$$
+so
+$$
+\begin{aligned}
+\alpha(m\cdot{P}) & = \alpha(m\cdot{y_1},\ldots,m\cdot{y_N}) \\
+& = \frac{\frac{1}{N}\sum_{u \in P}(m\cdot{y_u}-m\cdot{\overline{y}})^4}
+{\left[\frac{1}{N}\sum_{u \in P}(m\cdot{y_u}-m\cdot{\overline{y}})^2\right]^2}-3 \\
+& = \frac{\frac{m^4}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{\left[\frac{m^2}{N}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& = \frac{\frac{m^4}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{m^4\cdot\left[\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& = \frac{\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{\left[\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& = \alpha(P)
+\end{aligned}
+$$
+Therefore, it is Scale Invariant.
+
+\newpage
+### (c)
+Notice that: when $m>0$
+$$
+\begin{aligned}
+\alpha^{'}(P) & = \overline{y} \\
+\alpha^{'}(m\cdot{P}+b) & = m\cdot{\overline{y}} + b
+\end{aligned}
+$$
+so
+$$
+\begin{aligned}
+\alpha(m\cdot{P}+b) & = \alpha(m\cdot{y_1}+b,\ldots,m\cdot{y_N}+b) \\
+& = \frac{\frac{1}{N}\sum_{u \in P}(m\cdot{y_u}+b-m\cdot{\overline{y}}-b)^4}
+{\left[\frac{1}{N}\sum_{u \in P}(m\cdot{y_u}+b-m\cdot{\overline{y}}-b)^2\right]^2}-3 \\
+& = \frac{\frac{m^4}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{\left[\frac{m^2}{N}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& = \frac{\frac{m^4}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{m^4\cdot\left[\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& = \frac{\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{\left[\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& = \alpha(P)
+\end{aligned}
+$$
+Therefore, it is Location-Scale Invariant.
+
+\newpage
+### (d)
+Notice that:
+$$
+\begin{aligned}
+\alpha^{'}(P) & = \overline{y} \\
+\alpha^{'}(P^k) & = \overline{y}
+\end{aligned}
+$$
+so
+$$
+\begin{aligned}
+\alpha(P^k) & = \alpha(y_1,\ldots,y_N,\dots,y_1,\ldots,y_N) \\
+& = \frac{\frac{1}{kN}\cdot{k}\cdot\sum_{u \in P}(y_u-\overline{y})^4}
+{\left[\frac{1}{kN}\cdot{k}\cdot\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& = \frac{\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{\left[\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& = \alpha(P)
+\end{aligned}
+$$
+Therefore, it is Replication Invariant.
+
+\newpage
+### (e)
+Let $\alpha^{*}(P) = \frac{\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{\left[\frac{1}{N-1}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}$
+
+For (b):
+$$
+\begin{aligned}
+\alpha^{*}(m\cdot{P}) & = \frac{\frac{1}{N}\sum_{u \in P}(m\cdot{y_u}-m\cdot\overline{y})^4}
+{\left[\frac{1}{N-1}\sum_{u \in P}(m\cdot{y_u}-m\cdot\overline{y})^2\right]^2}-3 \\
+& = \frac{\frac{m^4}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{\left[\frac{m^2}{N-1}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& = \frac{\frac{m^4}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{m^4\cdot\left[\frac{1}{N-1}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& = \frac{\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{\left[\frac{1}{N-1}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& = \alpha^{*}(P)
+\end{aligned}
+$$
+Therefore, the conclusion in (b) remains unchanged.
+
+For (d):
+$$
+\begin{aligned}
+\alpha^{*}(P^k) & = \alpha^{*}(y_1,\ldots,y_N,\dots,y_1,\ldots,y_N) \\
+& = \frac{\frac{1}{kN}\cdot{k}\cdot\sum_{u \in P}(y_u-\overline{y})^4}
+{\left[\frac{1}{kN-1}\cdot{k}\cdot\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& = \frac{\frac{1}{N}\sum_{u \in P}(y_u-\overline{y})^4}
+{\left[\frac{k}{kN-1}\sum_{u \in P}(y_u-\overline{y})^2\right]^2}-3 \\
+& \neq \alpha^{*}(P)
+\end{aligned}
+$$
+Therefore, the conclusion in (d) is changed.
+
+\newpage
+### (f)
+Given population $P=\{y_1,y_2,\ldots,y_{N-1}\}$, $P^{*}=\{y_1,y_2,\dots,y_{N-1},y\}$
+
+Notice that: $\overline{y}=\frac{1}{N-1}\sum^{N-1}_{i=1}y_i$
+
+and $\overline{y}^*=\frac{1}{N}(\sum^{N-1}_{i=1}y_i + y)$
+
+so we can get: $\overline{y}^*=\frac{y+(N-1)\overline{y}}{N}$
+
+And
+$$
+\begin{aligned}
+\alpha(P) & = \frac{\frac{1}{N-1}\sum^{N-1}_{i=1}(y_i-\overline{y})^4}{\left[\frac{1}{N-1}\sum^{N-1}_{i=1}(y_i-\overline{y})^2\right]^2}-3 \\
+\alpha(P^{*}) & = \frac{\frac{1}{N}\left(\sum^{N-1}_{i=1}(y_i-\overline{y}^*)^4+(y-\overline{y}^*)^4\right)}{\left[\frac{1}{N}\left(\sum^{N-1}_{i=1}(y_i-\overline{y}^*)^2+(y-\overline{y}^*)^2\right)\right]^2}-3
+\end{aligned}
+$$
+
+Sensitivity Curve is:
+
+$$
+\begin{aligned}
+S(\alpha(P),y) & = N\left[\alpha(P^*)-\alpha(P)\right] \\
+& = N\left[\frac{\frac{1}{N}\left(\sum^{N-1}_{i=1}(y_i-\overline{y}^*)^4+(y-\overline{y}^*)^4\right)}{\left[\frac{1}{N}\left(\sum^{N-1}_{i=1}(y_i-\overline{y}^*)^2+(y-\overline{y}^*)^2\right)\right]^2}-3-\frac{\frac{1}{N-1}\sum^{N-1}_{i=1}(y_i-\overline{y})^4}{\left[\frac{1}{N-1}\sum^{N-1}_{i=1}(y_i-\overline{y})^2\right]^2}+3\right] \\
+& = N\left[\frac{\frac{1}{N}\left(\sum^{N-1}_{i=1}(y_i-\overline{y}^*)^4+(y-\overline{y}^*)^4\right)}{\left[\frac{1}{N}\left(\sum^{N-1}_{i=1}(y_i-\overline{y}^*)^2+(y-\overline{y}^*)^2\right)\right]^2}-\frac{\frac{1}{N-1}\sum^{N-1}_{i=1}(y_i-\overline{y})^4}{\left[\frac{1}{N-1}\sum^{N-1}_{i=1}(y_i-\overline{y})^2\right]^2}\right] \\
+& = N\left[\frac{\frac{1}{N}\left(\sum^{N-1}_{i=1}(y_i-\frac{y+(N-1)\overline{y}}{N})^4+(y-\frac{y+(N-1)\overline{y}}{N})^4\right)}{\left[\frac{1}{N}\left(\sum^{N-1}_{i=1}(y_i-\frac{y+(N-1)\overline{y}}{N})^2+(y-\frac{y+(N-1)\overline{y}}{N})^2\right)\right]^2}-\frac{\frac{1}{N-1}\sum^{N-1}_{i=1}(y_i-\overline{y})^4}{\left[\frac{1}{N-1}\sum^{N-1}_{i=1}(y_i-\overline{y})^2\right]^2}\right]
+\end{aligned}
+$$
+\newpage
+
+### (g)
+```{R}
+excess_kurtosis = function(P){
+  (mean( (P-mean(P))^4 ) / (mean( (P-mean(P))^2 )^2)) - 3
+}
+
+sc = function(y.pop, y, attr, ...) {
+  N <- length(y.pop) +1
+  sapply( y, function(y.new) {  N*(attr(c(y.new, y.pop),...) - attr(y.pop,...))  } )
+}
+
+set.seed(341)
+P <- rt(1000,10) # t distribution with df=10
+y <- seq(-10, 10, length.out=1000)
+plot(y, sc(P, y, excess_kurtosis), type = 'l', lwd = 2, main = "Sensitivity Curve for Excess Kurtosis",
+     ylab = "Sensitivity")
+abline(h=0, v=0, col="grey")
+```
+Based on the plot,
+One good property: It can be desirable due to its Location-Scale Invariant and Replication Invariant.
+One bad property: As shown in the plot, the curve is unbounded, so it is quite sensitive to extreme observations.
+
+\newpage
+### (h)
+a.Location invariance is desirable, location equivariance is undesirable. Because we expect that a measure of dispersion will 
+  not be affected by shifting each unit of population.
+
+b.Scale equivariance is desirable, scale invariance is undesirable. Because we expect that a measure of dispersion will 
+  be scaled by scaling each unit of population.
+
+c.Location-scale invariance/equivariance are both undesirable. Becasue we expect that a measure of dispersion should have the 
+  properties of locartion invariance and scale equivariance at the same time.
+  
+
+\newpage
+## Q2
+
+### (a)
+```{R}
+Iris <- read.csv("Iris.csv", header = TRUE)
+dim(Iris)
+# comment: the number of rows is 150 and the number of columns is 5.
+```
+
+\newpage
+### (b)
+```{R}
+library(knitr)
+kable(table(Iris$Species), col.names = c("Species","Frequency"))
+```
+\newpage
+### (c)
+```{R}
+Iris[which.max(Iris$SepalWidth), ]
+Iris[which.min(Iris$SepalWidth), ]
+
+#comment: 
+# Iris-setosa has the largest sepal widths
+# Iris-versicolor has the smallest sepal widths
+```
+\newpage
+### (d)
+```{R}
+kable(tapply(Iris$SepalLength, Iris$Species, mean))
+
+# comment:
+# mean of Iris-setosa is 5.006
+# mean of Iris-versicolor is 5.936
+# mean of Iris-virginica is 6.588
+```
+\newpage
+### (e)
+```{R}
+Iris$PetalRatio <- Iris$PetalWidth/Iris$PetalLength
+
+# i
+Iris[which.max(Iris$PetalRatio), ]
+Iris[which.min(Iris$PetalRatio), ]
+# comment: 
+# the species with largest value is Iris-virginica
+# the species with smallest value is Iris-setosa
+
+# ii
+aggregate(Iris$PetalRatio, by = list(Species = Iris$Species),
+          FUN = function(x){mean(x > 0.3)})
+# comment:
+# Iris-setosa: 4%, Iris-versicolor: 66%, Iris-virginica: 86%
+```
+\newpage
+### (f)
+```{R}
+str(Iris)
+```
+
+```{R}
+Iris$Species = as.factor(Iris$Species) # turn column's datatype into factor
+plot(Iris$PetalLength, Iris$SepalLength, col = Iris$Species,
+     xlab = "petal_length", ylab = "sepal_length", 
+     main = "Scatterplot of sepal_length VS. petal_length",
+     pch = 19)
+legend("bottomright", legend = levels(Iris$Species), 
+       col = 1:3, pch = 19) # col = 1:3 = black, red, green
+# comment:
+# I observed that there is a positive correlation between sepal_length
+# and petal_length for Iris-versicolor.
+# I observed that there is a positive correlation for Iris-virginica.
+# There is no obvious correlation for Iris-setosa.
+```
+\newpage
+
+### (g)
+```{R}
+par(mfrow=c(1,3))
+# Iris-setosa
+plot(Iris$PetalWidth[Iris$Species == "Iris-setosa"], 
+     Iris$PetalLength[Iris$Species == "Iris-setosa"],
+     xlab="petal_width", ylab="petal_length", 
+     main="Scatterplot for Iris-setosa")
+points(mean(Iris$PetalWidth[Iris$Species == "Iris-setosa"]), 
+       mean(Iris$PetalLength[Iris$Species == "Iris-setosa"]),
+       pch=19, col = "red")
+# Iris-versicolor
+plot(Iris$PetalWidth[Iris$Species == "Iris-versicolor"], 
+     Iris$PetalLength[Iris$Species == "Iris-versicolor"],
+     xlab="petal_width", ylab="petal_length", 
+     main="Scatterplot for Iris-versicolor")
+points(mean(Iris$PetalWidth[Iris$Species == "Iris-versicolor"]), 
+       mean(Iris$PetalLength[Iris$Species == "Iris-versicolor"]),
+       pch=19, col = "red")
+# Iris-virginica
+plot(Iris$PetalWidth[Iris$Species == "Iris-virginica"], 
+     Iris$PetalLength[Iris$Species == "Iris-virginica"],
+     xlab="petal_width", ylab="petal_length", 
+     main="Scatterplot for Iris-virginica")
+points(mean(Iris$PetalWidth[Iris$Species == "Iris-virginica"]), 
+       mean(Iris$PetalLength[Iris$Species == "Iris-virginica"]),
+       pch=19, col = "red")
+
+# comment:
+# I observed that there is a relative strong positive correlation between 
+# petal_lenght and petal_width for Iris-versicolor.
+# And there is a weak positive correlation for Iris-virginica.
+# There is no obvious correlation for Iris-setosa based on the scatterplot.
+```
+\newpage
+### (h)
+```{R}
+spec_indicator <- as.numeric(Iris$Species) # turn species into indicators
+plot(spec_indicator, Iris$SepalLength, xlab="species", ylab="sepal_length",
+     main="Scatterplot of sepal_length VS. species", xaxt = "n", pch=19)
+axis(1, at = 1:3, labels = levels(Iris$Species)) # label 3 species
+median_points <- aggregate(Iris$SepalLength, by = list(Species = Iris$Species),
+                    FUN = median)
+
+lines(1:3, median_points$x, type = "b", col="red", pch=19)
+```
+\newpage
+
+### (i)
+```{R}
+powerfun <- function(x, alpha) {
+  if(sum(x <= 0) > 1) stop("x must be positive")
+  if (alpha == 0)
+    log(x)
+  else if (alpha > 0) {
+    x^alpha
+  } else -x^alpha
+}
+
+# (i)
+par(mfrow=c(1,3))
+hist(Iris$SepalLength, xlab = "sepal_length",
+     main = "Histogram for sepal_length")
+hist(Iris$PetalRatio, xlab = "petal_ratio",
+     main = "Histogram for petal_length")
+plot(Iris$SepalLength, Iris$PetalRatio, 
+     xlab = "sepal_length",
+     ylab = "petal_ratio",
+     main = "Scatterplot of petal_ratio VS. sepal_length")
+```
+
+```{R}
+# (ii)
+par(mfrow = c(3,3))
+a = seq(-0.5, 1.5, length.out = 9)
+for (i in 1:9) {
+  hist(powerfun(Iris$SepalLength, a[i]),
+       col=adjustcolor("grey", alpha = 0.5),
+       main = bquote(alpha == .(a[i])),
+       xlab = "transferred_sepal_length",
+       breaks = 40)
+}
+
+# comment:
+# Based on the histograms, I think the power of 0.5 makes the distribution
+# of sepal_length approximately symmetric.
+hist(powerfun(Iris$SepalLength, 0.5),
+     col=adjustcolor("grey", alpha = 0.5),
+       main = "alpha = 0.5",
+       xlab = "transferred_sepal_length",
+       breaks = 40)
+```
+
+```{R}
+# (iii)
+par(mfrow = c(3,3))
+a = seq(.5, 2.5, length.out = 9)
+for (i in 1:9) {
+  hist(powerfun(Iris$PetalRatio, a[i]),
+       col=adjustcolor("grey", alpha = 0.5),
+       main = bquote(alpha == .(a[i])),
+       xlab = "transferred_petal_ratio",
+       breaks = 40)
+}
+
+# comment:
+# Based on the histograms, I think the power of 1.5 makes the distribution
+# of petal_ratio approximately symmetric.
+hist(powerfun(Iris$PetalRatio, 1.5),
+       col=adjustcolor("grey", alpha = 0.5),
+       main = "alpha = 1.5",
+       xlab = "transferred_petal_ratio",
+       breaks = 40)
+```
+```{R}
+# (iv)
+par(mfrow=c(3,3), mar=2.5*c(1,1,1,0.1))
+a = rep(c(-1/2,0,1/2),each=3)
+b = rep(c(0,1/2,1),times=3)
+
+for (i in 1:9) {
+plot( powerfun(Iris$SepalLength, a[i]), powerfun(Iris$PetalRatio, b[i]), 
+      pch = 19, cex=0.5,
+      col=adjustcolor("black", alpha = 0.3), 
+      xlab = "transferred_sepal_length", ylab = "transferred_petal_ratio",
+      main = bquote(alpha[x] == .(a[i]) ~ "," ~  alpha[y] == .(b[i])))
+}
+
+# comment:
+# Based on the scatter plots, I think the pair of powers (-0.5, 1) makes the
+# scatter plot of sepal_length and petal_ratio approximately linear.
+plot( powerfun(Iris$SepalLength, -0.5), powerfun(Iris$PetalRatio, 1), 
+      pch = 19, cex=0.5,
+      col=adjustcolor("black", alpha = 0.3), 
+      xlab = "transferred_sepal_length", ylab = "transferred_petal_ratio",
+      main = "alpha_x = -0.5, alpha_y = 1")
+```
+
+\newpage
+## Q3
+```{R}
+drawBoxPlot <- function(df){
+  m <- ncol(df)
+  plot(NA, xaxt="n",
+       xlim=c(0,2*m),
+       ylim=range(df),
+       ylab="", xlab="")
+  axis(side=1, at = seq(1,2*m,2),labels = colnames(df))
+  for (i in 1:m){
+    df_points <- boxplot.stats(df[,i])$stats
+    outliers <- boxplot.stats(df[,i])$out
+    center <- 2*i-1
+    lf_x <- center - 0.6 # x of left box
+    rh_x <- center + 0.6 # x of right box
+    min_y <- df_points[1] # y of min line
+    q1_y <- df_points[2] # y of q1 line
+    q2_y <- df_points[3] # y of median(q2) line
+    q3_y <- df_points[4] # y of q3 line
+    max_y <- df_points[5] # y of max line
+    lines(c(lf_x+0.3,rh_x-0.3), c(min_y,min_y)) # min line
+    lines(c(lf_x+0.3,rh_x-0.3), c(max_y,max_y)) # max line
+    lines(c(lf_x,rh_x), c(q1_y,q1_y)) # q1 line
+    lines(c(lf_x,rh_x), c(q3_y,q3_y)) # q3 line
+    lines(c(center,center),c(min_y,q1_y),lty=2) # dash line (bottom)
+    lines(c(center,center),c(q3_y,max_y),lty=2) # dash line (upside)
+    lines(c(lf_x,lf_x), c(q1_y,q3_y)) # left vertical line
+    lines(c(rh_x,rh_x), c(q1_y,q3_y)) # right vertical line
+    lines(c(lf_x,rh_x), c(q2_y,q2_y), lwd=2) # median line
+    points(rep(center,length(outliers)),outliers) # plot outliers
+  }
+}
+```
+
+```{R}
+# testing
+example <- Iris[,1:4]
+drawBoxPlot(example)
+```
+
