@@ -1,0 +1,483 @@
+---
+title: "STAT341 A3"
+author: "Yiming Shen 20891774"
+date: "03/04/2023"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+```{R}
+data <- read.csv("EconomicMobility.csv",header = TRUE)
+```
+
+### (a)
+```{R}
+data_WUS <- data$Mobility[data$Longitude < -109]
+data_EUS <- data$Mobility[data$Longitude > -85]
+# summary stat
+summary(data_WUS)
+summary(data_EUS)
+# plot
+par(mfrow=c(1,2))
+hist(data_WUS, main="Plot of Economic Mobility in Western US",
+     xlab="Mobility")
+hist(data_EUS, main="Plot of Economic Mobility in Eastern US",
+     xlab="Mobility")
+
+# Comments:
+# Based on summary statistics, we found that the center of western distribution 
+# is different with the center of eastern distribution. Both mean and median of
+# western distribution is larger than eastern distribution. And 
+# western distribution's maximum value is around 0.25, which is larger than 
+# eastern distribution's 0.16. 
+# Based on plots, we found that both western and eastern distribution have heavy 
+# right tails, so both of them are right-skewed. Besides, the location of peak 
+# (mode) for western distribution is also distinct from the one for eastern 
+# distribution.
+```
+\newpage
+
+### (b)
+```{R}
+# create Attribute function
+Attributes <- function(y){
+  SD <- sqrt(sum((y-mean(y))^2)/length(y))
+  CV <- SD/mean(y)
+  Sk <- mean((y-mean(y))^3)/SD^3
+  return(c(SD,CV,Sk))
+}
+
+# Apply to West
+Attributes(data_WUS)
+# Apply to East
+Attributes(data_EUS)
+```
+\newpage
+
+### (c)
+```{R}
+mixRandomly <- function(pop) {
+  pop1 <- pop$pop1
+  n_pop1 <- length(pop1)
+
+  pop2 <- pop$pop2
+  n_pop2 <- length(pop2)
+
+  mix <- c(pop1,pop2)
+  select4pop1 <- sample(1:(n_pop1 + n_pop2),
+                     n_pop1,
+                     replace = FALSE)
+
+  new_pop1 <- mix[select4pop1]  
+  new_pop2 <- mix[-select4pop1]
+  list(pop1=new_pop1, pop2=new_pop2)
+}
+```
+
+```{R}
+# Attribute 1
+SD_function <- function(pop){
+  pop1 <- pop$pop1
+  SD1 <- sqrt(mean((pop1-mean(pop1))^2))
+  pop2 <- pop$pop2
+  SD2 <- sqrt(mean((pop2-mean(pop2))^2))
+  return(abs(SD1/SD2-1))
+}
+
+# Attribute 2
+CV_function <- function(pop){
+  pop1 <- pop$pop1
+  CV1 <- sqrt(mean((pop1-mean(pop1))^2))/mean(pop1)
+  pop2 <- pop$pop2
+  CV2 <- sqrt(mean((pop2-mean(pop2))^2))/mean(pop2)
+  return(abs(CV1/CV2-1))
+}
+
+# Attribute 3
+Sk_function <- function(pop){
+  pop1 <- pop$pop1
+  Sk1 <- mean((pop1-mean(pop1))^3)/(sqrt(mean((pop1-mean(pop1))^2)))^3
+  pop2 <- pop$pop2
+  Sk2 <- mean((pop2-mean(pop2))^3)/(sqrt(mean((pop2-mean(pop2))^2)))^3
+  return(abs(Sk1/Sk2-1))
+}
+```
+
+```{R}
+pop <- list(pop1 = data_WUS, pop2 = data_EUS)
+
+set.seed(20891774)
+# 1000 permutation test
+SD_test <- sapply(1:1000, FUN = function(...){SD_function(mixRandomly(pop))})
+CV_test <- sapply(1:1000, FUN = function(...){CV_function(mixRandomly(pop))})
+Sk_test <- sapply(1:1000, FUN = function(...){Sk_function(mixRandomly(pop))})
+```
+
+```{R}
+# Test visualization
+par(mfrow=c(1,3))
+hist(SD_test, breaks = 20, probability = TRUE,
+     main="Histogram of Premutation Test about SD",
+     xlab="SD")
+abline(v=SD_function(pop),col="red",lwd=2)
+
+hist(CV_test, breaks = 20, probability = TRUE,
+     main="Histogram of Premutation Test about CV",
+     xlab="CV")
+abline(v=CV_function(pop),col="red",lwd=2)
+
+hist(Sk_test, breaks = 20, probability = TRUE,
+     main="Histogram of Premutation Test about Sk",
+     xlab="Sk")
+abline(v=Sk_function(pop),col="red",lwd=2)
+
+# p-value
+mean(SD_test >= SD_function(pop))
+mean(CV_test >= CV_function(pop))
+mean(Sk_test >= Sk_function(pop))
+
+# Conclusions based on p-value
+# For attribute SD, since the p-value is 0.022 > 0.01, so it means that there is 
+# evidence against the null hypothesis: the two sub-population WUS, EUS were
+# randomly drawn from the same population.
+# For attribute CV, since the p-value is 0.081 > 0.05, so it means that there is 
+# weak evidence against the null hypothesis.
+# For attribute Sk, since the p-value is 0.551 > 0.1, so it means that there is 
+# no evidence against the null hypothesis.
+```
+\newpage
+
+### (d)
+```{R}
+calculateSLmulti <- function(pop, discrepancies, M_outer = 1000, M_inner){
+  #pop is a list whose two members are two sub-populations
+  
+  if (missing(M_inner)) M_inner <- M_outer
+  ## Local function to calculate the significance levels
+  ## over the discrepancies and return their minimum
+  
+  getSLmin <- function(basePop, discrepanies, M) {
+    observedVals <- sapply(discrepancies, 
+                           FUN = function(discrepancy) {discrepancy(basePop)})
+    
+    K <- length(discrepancies)
+    
+    total <- Reduce(function(counts, i){
+      #mixRandomly mixes the two populations randomly, so the new sub-populations are indistinguishable
+      NewPop <- mixRandomly(basePop)
+      
+      ## calculate the discrepancy and counts
+      Map(function(k) {
+        Dk <- discrepancies[[k]](NewPop)
+        if (Dk >= observedVals[k]) counts[k] <<- counts[k] +1 },
+        1:K) 
+      counts
+    }, 
+    1:M, init = numeric(length=K)) 
+    
+    SLs <- total/M
+    min(SLs)
+  }
+  
+  SLmin <- getSLmin(pop, discrepancies, M_inner)
+  
+  total <- Reduce(function(count, m){
+    basePop <- mixRandomly(pop)
+    if (getSLmin(basePop, discrepancies, M_inner) <= SLmin) count + 1 else count
+  },   1:M_outer, init = 0)
+  
+  SLstar <- total/M_outer
+  SLstar
+}
+
+discrepancies <- list(SD_function,CV_function,Sk_function)
+set.seed(20891774)
+pvalue_star <- calculateSLmulti(pop, discrepancies, M_outer=100,M_inner=100)
+pvalue_star
+
+# Conclusion based on Multiple testing
+# Since the p-value_star is 0.08 > 0.05, it means that there is weak evidence
+# against the null hypothesis: the two sub-population WUS, EUS were
+# randomly drawn from the same population based on the three attributes.
+```
+
+\newpage
+
+## Question 2
+### (a)
+```{R}
+M <- 1000
+n <- 50
+set.seed(20891774)
+# simple random sampling without replacement
+samples <- sapply(1:M, function(...){
+  sample(data$Mobility, n, replace = FALSE)
+})
+# Attributes function comes from Q1
+samples_attributes <- apply(samples,2,Attributes)
+pop_attributes <- Attributes(data$Mobility)
+
+# construct three histograms of the sample error for each attribute
+par(mfrow=c(1,3))
+hist(samples_attributes[1,]-pop_attributes[1], breaks = 20,
+     main=" Histogram of the sample error for SD", xlab="Sample Error")
+hist(samples_attributes[2,]-pop_attributes[2], breaks = 20,
+     main=" Histogram of the sample error for CV", xlab="Sample Error")
+hist(samples_attributes[3,]-pop_attributes[3], breaks = 20,
+     main=" Histogram of the sample error for Sk", xlab="Sample Error")
+
+# Interpret:
+# Based on the histogram for SD, it reaches the peak at around -0.013 and the 
+# distribution has a light right tail.
+# Based on the histogram for CV, it reaches the peak at around 0 and the 
+# distribution has a light right tail.
+# Based on the histogram for Sk, it reaches the peak at around -1 and the 
+# distribution has a right tail.
+```
+
+\newpage
+
+### (b)
+```{R}
+CommunitiesSample = c(9, 281, 642, 708, 40, 148, 651, 18, 398,
+    348, 67, 605, 383, 551, 151, 591, 471, 344, 168, 161, 421,
+    444, 29, 633, 241, 665, 42, 44, 224, 8, 716, 352, 217, 696,
+    683, 451, 56, 278, 401, 468, 611, 654, 229, 375, 576, 242,
+    280, 520, 660, 74, 86, 434, 17, 649, 163, 485, 469, 447,
+    185, 656, 474, 355, 35, 538, 36, 503, 409, 28, 310, 153,
+    285, 724, 93, 269, 372, 517, 693, 77, 713, 720, 584, 126,
+    422, 152, 75, 599, 606, 480, 304, 679, 703, 100, 25, 643,
+    180, 293, 539, 211, 547, 343)
+```
+
+#### i
+```{R}
+# Calculate the three attributes SD, CV, and SK using the given sample
+S_Mobility <- data$Mobility[CommunitiesSample]
+Attributes(S_Mobility)
+```
+
+#### ii
+```{R}
+# construct B=1000 bootstrap samples
+B = 1000
+set.seed(20891774)
+bootstrap_samples <- sapply(1:B, FUN = function(...){sample(S_Mobility,replace = TRUE)})
+bootstrap_attributes <- apply(bootstrap_samples,2,Attributes)
+
+par(mfrow=c(1,3))
+hist(bootstrap_attributes[1,], breaks=20, 
+     main="Histogram of Bootstrap Sampling Distribution for SD",
+     xlab="SD")
+hist(bootstrap_attributes[2,], breaks=20, 
+     main="Histogram of Bootstrap Sampling Distribution for CV",
+     xlab="CV")
+hist(bootstrap_attributes[3,], breaks=20, 
+     main="Histogram of Bootstrap Sampling Distribution for Sk",
+     xlab="Sk")
+```
+
+#### iii
+```{R}
+# Calculate standard errors for each of the three bootstrap estimates
+se <- apply(bootstrap_attributes,1,sd)
+se
+# construct 95% confidence intervals
+# lower bound
+lb <- apply(bootstrap_attributes,1,quantile,0.025)
+lb
+# upper bound
+ub <- apply(bootstrap_attributes,1,quantile,0.975)
+ub
+
+# summary
+# for SD: se is 0.006968408, 95% c.i. is (0.03732703,0.06290612)
+# for CV: se is 0.055915424, 95% c.i. is (0.38796683,0.59642163)
+# for Sk: se is 0.628077010, 95% c.i. is (0.52000240,2.55927299)
+```
+
+\newpage
+
+### (c)
+```{R}
+M <- 200
+B <- 1000
+n <- 100
+set.seed(20891774)
+samples2 <- sapply(1:M, FUN = function(...){sample(data$Mobility,
+                                                n,
+                                                replace=FALSE)})
+samples2_CI <- apply(samples2,2,function(S){
+  bootstrap_samples2 <- sapply(1:B, FUN=function(...) sample(S, replace=TRUE))
+  bootstrap_attributes2 <- apply(bootstrap_samples2,2,Attributes)
+  apply(bootstrap_attributes2,1,quantile,c(0.025,0.975))
+})
+                                                
+cp = rep(0,3)
+# coverage probability for SD
+cp[1] <- mean((pop_attributes[1]>=samples2_CI[1,])
+             &(pop_attributes[1]<=samples2_CI[2,]))
+# coverage probability for CV
+cp[2] <- mean((pop_attributes[2]>=samples2_CI[3,])
+             &(pop_attributes[2]<=samples2_CI[4,]))
+# coverage probability for Sk
+cp[3] <- mean((pop_attributes[3]>=samples2_CI[5,])
+             &(pop_attributes[3]<=samples2_CI[6,]))
+
+# coverage probability
+cp
+# standard error
+sqrt(cp*(1-cp)/M)
+```
+
+```{R}
+# construct 95% confidence intervals for the the coverage probabilities
+cp_se <- sqrt(cp*(1-cp)/M)
+c <- 1.96
+# lower bound for SD
+cp[1]-c*cp_se[1]
+# upper bound for SD
+cp[1]+c*cp_se[1]
+# lower bound for CV
+cp[2]-c*cp_se[2]
+# upper bound for CV
+cp[2]+c*cp_se[2]
+# lower bound for Sk
+cp[3]-c*cp_se[3]
+# upper bound for Sk
+cp[3]+c*cp_se[3]
+
+# summary
+# 95% CI for cp of SD: (0.8349626,0.9250374)
+# 95% CI for cp of CV: (0.8525139,0.9374861)
+# 95% CI for cp of Sk: (0.6206214,0.7493786)
+```
+
+\newpage
+
+## Question 3
+```{R}
+library(splines)
+
+getmuhat <- function(sampleXY, complexity) {
+    formula <- paste0("y ~ ", if (complexity == 0)
+        "1" else {
+        if (complexity < 20) {
+            paste0("poly(x, ", complexity, ", raw = FALSE)")
+            ## due to Numerical overflow
+        } else {
+            ## if complexity >= 20 use a spline.
+            paste0("bs(x, ", complexity, ")")
+        }
+    })
+
+    fit <- lm(as.formula(formula), data = sampleXY)
+
+    ## From this we construct the predictor function
+    muhat <- function(x) {
+        if ("x" %in% names(x)) {
+            ## x is a dataframe containing the variate named by xvarname
+            newdata <- x
+        } else ## x is a vector of values that needs to be a data.frame else else ## x is a vector of values that needs to be a data.frame ## x else ## x is a vector of values that needs to be a data.frame is a else ## x is a vector of values that needs to be a data.frame vector else ## x is a vector of values that needs to be a data.frame of else ## x is a vector of values that needs to be a data.frame values else ## x is a vector of values that needs to be a data.frame that else ## x is a vector of values that needs to be a data.frame needs else ## x is a vector of values that needs to be a data.frame to else ## x is a vector of values that needs to be a data.frame be a else ## x is a vector of values that needs to be a data.frame data.frame
+        {
+            newdata <- data.frame(x = x)
+        }
+        ## The suppress warnings prediction
+        suppressWarnings({
+            ypred = predict(fit, newdata = newdata, silent = TRUE)
+        })
+
+        ypred
+    }
+    ## muhat is the function that we need to calculate values at any x, so
+    ## we return this function from getmuhat
+    muhat
+}
+```
+
+### (a)
+```{R}
+training <- data.frame(x=log(data$Population[CommunitiesSample]),
+                       y=data$Commute[CommunitiesSample])
+# generate scatter plot
+plot(training, pch=19, col=adjustcolor("black",0.5),
+     xlab="log(population)",
+     ylab="Commute",
+     main="Scatter plot of log(population) VS. Commute")
+xlim <- extendrange(training$x)
+# d = 1
+muhat1 <- getmuhat(training, 1)
+curve(muhat1, from=xlim[1], to=xlim[2],
+      add=TRUE, lwd=2, n=1000, col="red")
+# d = 2
+muhat2 <- getmuhat(training, 2)
+curve(muhat2, from=xlim[1], to=xlim[2],
+      add=TRUE, lwd=2, n=1000, col="green")
+# d = 3
+muhat3 <- getmuhat(training, 3)
+curve(muhat3, from=xlim[1], to=xlim[2],
+      add=TRUE, lwd=2, n=1000, col="blue")
+# d = 4
+muhat4 <- getmuhat(training, 4)
+curve(muhat4, from=xlim[1], to=xlim[2],
+      add=TRUE, lwd=2, n=1000, col="yellow")
+# d = 5
+muhat5 <- getmuhat(training, 5)
+curve(muhat5, from=xlim[1], to=xlim[2],
+      add=TRUE, lwd=2, n=1000, col="tan")
+legend("topright", legend=c("d=1","d=2","d=3","d=4","d=5"),
+       col=c("red","green","blue","yellow","tan"),
+       lwd=2)
+```
+
+\newpage
+
+### (b)
+```{R}
+apse <- function(y, x, predfun) {
+    {
+        mean((y - predfun(x))^2, na.rm = TRUE)
+    }
+}
+testing <- data.frame(x=log(data$Population[-CommunitiesSample]),
+                      y=data$Commute[-CommunitiesSample])
+
+apseST <- function(predfun){
+  apseS <- apse(y=training$y,x=training$x,predfun)
+  apseT <- apse(y=testing$y,x=testing$x,predfun)
+  c(apseS,apseT)
+}
+
+temp.apse <- cbind(apseST(muhat1),apseST(muhat2),apseST(muhat3),apseST(muhat4),
+                   apseST(muhat5))
+rownames(temp.apse) <- c("Training set APSE","Testing set APSE")
+colnames(temp.apse) <- c("d=1","d=2","d=3","d=4","d=5")
+temp.apse
+
+# comments:
+# After comparing the APSE values on test and training sets,
+# we found that Testing set APSE is always larger than Training set APSE for 
+# each value of degree.
+```
+
+\newpage
+
+### (c)
+```{R}
+plot(1:5, temp.apse[1,], ylim=extendrange(temp.apse),type='l',
+     col=1, lwd=2, xlab="Degree", ylab="APSE", 
+     main="APSE on a Sample and Complement")
+lines(1:5,temp.apse[2,],type='l',col=4,lwd=2)
+legend("bottomleft",legend=c("Training set APSE","Testing set APSE"),
+       col=c(1,4),lwd=c(2,2))
+
+# comments:
+# Based on out-of-sample prediction sample performance,
+# At around degree equal to 2, increasing complexity does not improve
+# prediction accuracy. So we believe the best model is the one with d=2.
+```
+

@@ -1,0 +1,823 @@
+---
+title: "stat341 assignment02"
+author: "Yiming Shen 20891774"
+date: "06/03/2023"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question1
+```{R}
+data = read.csv("EconomicMobility.csv",header = TRUE)
+```
+
+
+### (a)
+```{R,fig.height=10}
+population.cols = rep(NA,nrow(data))
+for (i in 1:nrow(data)){
+  if(data$Population[i]<=100000)
+  {population.cols[i]=adjustcolor("blue",0.25)}
+  else if(data$Population[i]>100000 & data$Population[i]<=500000)
+  {population.cols[i]=adjustcolor("black",0.5)}
+  else if(data$Population[i]>500000 & data$Population[i]<=5000000)
+  {population.cols[i]=adjustcolor("blue",0.75)}
+  else{population.cols[i]=adjustcolor("black",1)}
+}
+
+commute.cols = rep(NA,nrow(data))
+for (i in 1:nrow(data)){
+  if(data$Commute[i]<=0.25)
+  {commute.cols[i]=adjustcolor("blue",0.25)}
+  else if(data$Commute[i]>0.25 & data$Commute[i]<=0.5)
+  {commute.cols[i]=adjustcolor("black",0.5)}
+  else if(data$Commute[i]>0.5 & data$Commute[i]<=0.75)
+  {commute.cols[i]=adjustcolor("blue",0.75)}
+  else{commute.cols[i]=adjustcolor("black",1)}
+}
+
+# plot scatter plot
+par(mfrow=c(2,1))
+plot(data$Longitude,data$Latitude,col=population.cols,
+     xlab="Longitude", ylab="Latitude", pch=16)
+legend("topright",legend = c("Very low population","Low population",
+                             "High population","Very high population"),
+       col = c(adjustcolor("blue",0.25),adjustcolor("black",0.5),
+               adjustcolor("blue",0.75),adjustcolor("black",1)),pch=16)
+
+plot(data$Longitude,data$Latitude,col=commute.cols,
+     xlab="Longitude", ylab="Latitude", pch=16)
+legend("topright",legend = c("Very low commute","Low commute",
+                              "High commute","Very high commute"),
+       col = c(adjustcolor("blue",0.25),adjustcolor("black",0.5),
+               adjustcolor("blue",0.75),adjustcolor("black",1)),pch=16)
+
+# comments: 
+# Based on the population scatter-plot, I found that high population
+# and very high population communities are relatively concentrate on west and
+# east coasts of USA and the population of communities in the middle is
+# relatively low.
+# Based on the commute scatter-plot, I found that high commute and very high
+# commute communities are concentrate in the middle of USA and the commute of
+# communities on the west and east coasts is low.
+# Therefore, communities with low population are very likely to have high 
+# commute in USA.
+```
+
+\newpage
+### (b)
+```{R}
+# build power transformation function
+powerfun <- function(x,alpha){
+  if(sum(x <= 0) >0) stop("x must be positive")
+  if(alpha == 0)
+    log(x)
+  else if (alpha > 0 ){
+    x^alpha
+  }else -x^alpha
+}
+powerfun2 <- function(alpha.x, alpha.y){
+  cbind(powerfun(data$Population,alpha.x),powerfun(data$Commute,alpha.y))
+}
+
+# two scatter-plot
+par(mfrow=c(1,2))
+plot(data$Population,data$Commute,xlab="Population",ylab="Commute",
+     main = "Original values of commute vs. population")
+plot(powerfun2(-1/2,-1/2),xlab="Transformed Population",
+     ylab="Transformed Commute",
+     main="Transformed values of commute vs. population")
+```
+
+\newpage
+### (c)
+```{R}
+L = function(theta){
+  alpha.x = theta[1]
+  alpha.y = theta[2]
+  1-cor(powerfun(data$Population,alpha.x),powerfun(data$Commute,alpha.y))^2
+}
+
+theta_optimum = nlminb(start = c(1,1), objective = L)$par
+theta_optimum
+```
+
+```{R}
+par(mfrow=c(1,2))
+# plot original
+plot(data$Population,data$Commute,xlab="Population",ylab="Commute")
+# original correlation coefficient
+cor(data$Population,data$Commute)
+
+# plot transformed
+plot(powerfun2(theta_optimum[1],theta_optimum[2]),xlab="Transformed Population",
+     ylab="Transformed Commute")
+# transformed correlation coefficient
+cor(powerfun(data$Population,theta_optimum[1]),
+    powerfun(data$Commute,theta_optimum[2]))
+```
+\newpage
+### (d)
+```{R}
+N <- nrow(data)
+delta <- rep(0,N)
+cor_0 <- cor(data$Population,data$Commute)
+for (i in 1:N){
+  delta[i] = cor_0 - cor(data$Population[-i],data$Commute[-i])
+}
+plot(delta,main="Influence plot based on original data",
+     pch=19, xlab="Index", ylab="Influence")
+# Influential points
+data[which.max(delta),]
+```
+
+```{R}
+N <- nrow(data)
+delta <- rep(0,N)
+cor_0 <- cor(powerfun(data$Population,theta_optimum[1]),
+             powerfun(data$Commute,theta_optimum[2]))
+for (i in 1:N){
+  delta[i] = cor_0 - cor(powerfun(data$Population[-i],theta_optimum[1]),
+                         powerfun(data$Commute[-i],theta_optimum[2]))
+}
+plot(delta,main="Influence plot based on transformed data",
+     pch=19, xlab="Index", ylab="Influence")
+# Influential points
+data[which.max(delta),]
+```
+
+\newpage
+## Question 2
+
+### (a)
+$$
+\begin{aligned}
+L(\boldsymbol{\theta};y_1,...,y_n) &= \prod_{i=1}^n\frac
+{\beta^\alpha y_i^{\alpha-1}}
+{\Gamma(\alpha)}\exp(-y_i\beta) \\
+&=\frac{\beta^{\alpha n}}{\Gamma(\alpha)^n}\left(\prod_{i=1}^n y_i\right)^
+{\alpha-1}\exp\left(-\beta\sum_{i=1}^n
+y_i\right)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+\ell(\boldsymbol{\theta};y_1,...,y_n) &= \sum_{i=1}^n\log
+(f_{\boldsymbol\theta}(y_i))\\
+&=\log\left(\frac{\beta^{\alpha n}}{\Gamma(\alpha)^n}\left(\prod_{i=1}^n y_i\right)^
+{\alpha-1}\exp\left(-\beta\sum_{i=1}^n
+y_i\right)\right) \\
+&=\alpha n \log(\beta)+(\alpha-1)\sum_{i=1}^n\log(y_i)-n\log(\Gamma(\alpha))-
+\beta\sum_{i=1}^n y_i
+\end{aligned}
+$$
+\newpage
+
+### (b)
+```{R}
+CreateLogLikeFunction <- function(pop){
+ n <- length(pop)
+ function(theta){
+ alpha <- theta[1]
+ beta <- theta[2]
+ alpha*n*log(beta)+(alpha-1)*sum(log(pop))-n*lgamma(alpha)-beta*sum(pop)
+ }
+}
+CreateLogLikeFunction_commute <- CreateLogLikeFunction(data$Commute)
+CreateLogLikeFunction_commute(c(2,2))
+```
+
+\newpage
+### (c)
+```{R}
+alpha <- 1:100 # 0 will lead to error
+beta <- 1:100
+z <- matrix(0,100,100)
+for (i in 1:100){
+  for (j in 1:100){
+    z[i,j] = CreateLogLikeFunction_commute(c(alpha[i],beta[j]))
+  }
+}
+# 3D plot
+persp(alpha,beta,z,col="yellow",expand=1,
+      ticktype='detailed',theta = 30, phi = 40) #viewpoint rotation
+# heat map
+image(alpha,beta,z,col = heat.colors(100), useRaster = TRUE, ann = FALSE)
+# contour plot
+mtext(text = "alpha", side = 1, line = 1.5)
+mtext(text = "beta", side = 2, line = 1.5)
+contour(alpha,beta,z,add=TRUE,levels=seq(-250000,0,5000))
+```
+
+\newpage
+### (d)
+```{R}
+gradientDescent <- function(theta = 0, 
+      rhoFn, gradientFn, lineSearchFn, testConvergenceFn,
+      maxIterations = 100,  
+      tolerance = 1E-6, relative = FALSE, 
+      lambdaStepsize = 0.01, lambdaMax = 0.5 ) {
+  
+  converged <- FALSE
+  i <- 0
+  
+  while (!converged & i <= maxIterations) {
+    g <- gradientFn(theta) ## gradient
+    glength <-  sqrt(sum(g^2)) ## gradient direction
+    if (glength > 0) g <- g /glength
+    
+    lambda <- lineSearchFn(theta, rhoFn, g,  
+                lambdaStepsize = lambdaStepsize, lambdaMax = lambdaMax)
+    
+    thetaNew <- theta - lambda * g
+    converged <- testConvergenceFn(thetaNew, theta,
+                                   tolerance = tolerance,
+                                   relative = relative)
+    theta <- thetaNew
+    i <- i + 1
+  }
+  
+  ## Return last value and whether converged or not
+  list(theta = theta, converged = converged, iteration = i, fnValue = rhoFn(theta)
+       )
+}
+
+### line searching could be done as a simple grid search
+gridLineSearch <- function(theta, rhoFn, g, 
+                       lambdaStepsize = 0.01, 
+                       lambdaMax = 1) {
+  ## grid of lambda values to search
+  lambdas <- seq(from = 0, by = lambdaStepsize,  to = lambdaMax)
+  
+  ## line search
+  rhoVals <- Map(function(lambda) {rhoFn(theta - lambda * g)}, lambdas)
+  ## Return the lambda that gave the minimum
+  lambdas[which.min(rhoVals)]
+}
+
+testConvergence <- function(thetaNew, thetaOld, tolerance = 1E-10, relative=FALSE) {
+   sum(abs(thetaNew - thetaOld)) < if (relative) tolerance * sum(abs(thetaOld)) else tolerance
+}
+
+# find the max = find the min of negative
+CreateLogLikeFunction_Negative <- function(pop){
+  n <- length(pop)
+  function(theta){
+    alpha <- theta[1]
+    beta <-theta[2]
+    if(beta<=0 | alpha<=0){     # <=0 will lead to error
+      return(Inf)
+    }else
+    {-(alpha*n*log(beta)+(alpha-1)*sum(log(pop))-n*lgamma(alpha)-
+         beta*sum(pop))
+      }
+  }
+}
+
+rho <- CreateLogLikeFunction_Negative(data$Commute)
+
+CreateGradient <- function(pop){
+  n <- length(pop)
+  function(theta){
+    alpha <- theta[1]
+    beta <- theta[2]
+    -c(n*log(beta)+sum(log(pop))-n*digamma(alpha),
+       alpha*n/beta-sum(pop))
+  }
+}
+
+g <- CreateGradient(data$Commute)
+
+gradientDescent(rhoFn = rho,
+                gradientFn = g,
+                theta=c(2,2),   # take (2,2) as initial value
+                lineSearchFn = gridLineSearch,
+                testConvergenceFn = testConvergence,
+                maxIterations = 1000,
+                lambdaStepsize = 0.01,
+                lambdaMax = 5)
+```
+
+\newpage
+### (e)
+```{R}
+# 1-5
+gradientDescent(rhoFn = rho,
+                gradientFn = g,
+                theta = c(5,5),    # take (5,5) as initial value
+                lineSearchFn = gridLineSearch,
+                testConvergenceFn = testConvergence,
+                maxIterations = 500,
+                lambdaStepsize = 1,
+                lambdaMax = 5)
+
+# 0.0001 - 0.01
+  gradientDescent(rhoFn = rho,
+                gradientFn = g,
+                theta = c(5,5), # take (5,5) as initial value
+                lineSearchFn = gridLineSearch,
+                testConvergenceFn = testConvergence,
+                maxIterations = 500,
+                lambdaStepsize = 0.0001,
+                lambdaMax = 0.01)
+  
+# comments:
+# I observed that when using the gradient descent with a line search,
+# if the step size is small, it does not converge.
+```
+
+\newpage
+### (f)
+```{R}
+# Prerequisite functions all of which we discussed in class
+gradientDescentWithSolutionPath <- function(theta, 
+      rhoFn, gradientFn, lineSearchFn, testConvergenceFn,
+      maxIterations = 100,  
+      tolerance = 1E-6, relative = FALSE, 
+      lambdaStepsize = 0.01, lambdaMax = 0.5) {
+  
+  SolutionPath = matrix(NA,nrow = maxIterations, ncol = length(theta))
+  SolutionPath[1,] = theta
+  converged <- FALSE
+  i <- 0
+  
+  while (!converged & i < (maxIterations-1) ) {
+    g <- gradientFn(theta) ## gradient
+    glength <-  sqrt(sum(g^2)) ## gradient direction
+    if (glength > 0) g <- g /glength
+    
+    lambda <- lineSearchFn(theta, rhoFn, g,  
+                lambdaStepsize = lambdaStepsize, lambdaMax = lambdaMax)
+    
+    thetaNew <- theta - lambda * g
+    converged <- testConvergenceFn(thetaNew, theta,
+                                   tolerance = tolerance,
+                                   relative = relative)
+    theta <- thetaNew
+    i <- i + 1
+    SolutionPath[(i+1),] = theta
+  }
+  SolutionPath = SolutionPath[1:(i+1),]
+  ## Return last value and whether converged or not
+  list(theta = theta, converged = converged, iteration = i, fnValue = rhoFn(theta) , 
+       SolutionPath = SolutionPath 
+       )
+}
+
+path1 <- gradientDescentWithSolutionPath(rhoFn = rho,
+                                         gradientFn = g,
+                                         theta = c(5,5),#set initial value (5,5)
+                                         lineSearchFn = gridLineSearch,
+                                         testConvergenceFn = testConvergence,
+                                         maxIterations = 500, 
+                                         lambdaStepsize = 0.01,
+                                         lambdaMax = 5)
+par(mfrow=c(1,3))
+plot(path1$SolutionPath[,1],xlab="Iteration",ylab="alpha")
+plot(path1$SolutionPath[,2],xlab="Iteration",ylab="beta")
+plot(apply(path1$SolutionPath,1,CreateLogLikeFunction_commute),
+     xlab="Iteration",
+     ylab="Loglikehood")
+```
+
+```{R}
+path2 <- gradientDescentWithSolutionPath(rhoFn = rho,
+                                         gradientFn = g,
+                                         theta = c(5,5),
+                                         lineSearchFn = gridLineSearch,
+                                         testConvergenceFn = testConvergence,
+                                         maxIterations = 500,
+                                         lambdaStepsize = 1,
+                                         lambdaMax = 5)
+par(mfrow=c(1,3))
+plot(path2$SolutionPath[,1],xlab="Iteration",ylab="alpha")
+plot(path2$SolutionPath[,2],xlab="Iteration",ylab="beta")
+plot(apply(path2$SolutionPath,1,CreateLogLikeFunction_commute),
+     xlab="Iteration",
+     ylab="Loglikehood")
+
+path3 <- gradientDescentWithSolutionPath(rhoFn = rho,
+                                         gradientFn = g,
+                                         theta = c(5,5),
+                                         lineSearchFn = gridLineSearch,
+                                         testConvergenceFn = testConvergence,
+                                         maxIterations = 500,
+                                         lambdaStepsize = 0.0001,
+                                         lambdaMax = 0.01)
+par(mfrow=c(1,3))
+plot(path3$SolutionPath[,1],xlab="Iteration",ylab="alpha")
+plot(path3$SolutionPath[,2],xlab="Iteration",ylab="beta")
+plot(apply(path3$SolutionPath,1,CreateLogLikeFunction_commute),
+     xlab="Iteration",
+     ylab="Loglikehood")
+
+
+# comments:
+# Based on the first set of solution paths, I found that the value of alpha and 
+# beta and loglikelihood function are all converged with the increase of 
+# iteration.
+
+# Based on the second set of solution paths, I found that the value of alpha,
+# beta and loglikelihood function are all converged with only a few steps.
+# The reason is very likely that the step size is too large compared with 
+# other sets.
+
+# Based on the third set of solution paths, I found that the value of alpha,
+# beta and loglikelihoood function are not converged over iteration.
+# The reason is very likely that the step size is too small compared with
+# other sets, so the maxiteration we defined is not big enough for convergence.
+```
+
+\newpage
+
+###(g)
+
+```{R}
+x <- seq(0,1,length=500)
+par(mfrow=c(1,3))
+# first set
+hist(data$Commute,probability = TRUE,
+     xlab="Commute",main = "Probability histogram of Commute with PDF of
+     Gamma based on (d)")
+lines(x, dgamma(x,shape=path1$theta[1],rate = path1$theta[2]),col="red")
+
+# second set
+hist(data$Commute,probability = TRUE,
+     xlab="Commute",main = "Probability histogram of Commute with PDF of
+     Gamma based on (e)_1")
+lines(x, dgamma(x,shape=path2$theta[1],rate = path2$theta[2]),col="red")
+
+# third set
+hist(data$Commute,probability = TRUE,
+     xlab="Commute",main = "Probability histogram of Commute with PDF of
+     Gamma based on (e)_2")
+lines(x, dgamma(x,shape=path3$theta[1],rate = path3$theta[2]),col="red")
+
+# comments:
+# Based on the first plot, the pdf of the Gamma distribution with
+# their estimates from part (d) is very close to the shape of probability 
+# histogram of commute.
+
+# While from the second and third plots, I found that the pdf of the Gamma with
+# their estimates from part (e) are far different from the probability histogram
+# of commute, since the step sizes of their estimation is either too large or
+# too small. 
+```
+
+\newpage
+## Question3
+```{R}
+infection <- read.csv("Infectious.csv")
+```
+
+### (a)
+```{R}
+plot(infection, main = "Plot of Infected VS. Deceased.Prop")
+# comments:
+# Based on the plot, there is an increasing trend. And proportion of infected 
+# people who have died increased rapidly at the early stage and became steadier
+# over time, until it became nearly converged at the final stage.
+```
+
+\newpage
+### (b)
+```{R}
+rho.to.plot <- function(alpha,beta){
+  x <- infection$Infected
+  y <- infection$Deceased.Prop
+  sum((y-(1-1/(alpha+beta*x)))^2)
+}
+
+alpha_sequence <- seq(0.5,4,length=100)
+beta_sequence <- seq(0.1,2, length=100)
+
+z <- matrix(NA, nrow = length(alpha_sequence), ncol=length(beta_sequence))
+for (i in 1:length(alpha_sequence)) {
+  for (j in 1:length(beta_sequence)) {
+    z[i,j] = rho.to.plot(alpha_sequence[i],beta_sequence[j])
+  }
+}
+
+# 3D plot
+persp(alpha_sequence,beta_sequence,z,theta = -30, phi=-10,
+      col='yellow',expand=1,
+      ticktype = 'detailed')
+# heat map with contour plot
+image(alpha_sequence,beta_sequence,z,col=heat.colors(100))
+contour(alpha_sequence,beta_sequence,z,add=TRUE,levels = c(0.05,0.5,1,2,3))
+```
+
+\newpage
+### (c)
+```{R}
+alpha_sequence <- seq(1.5, 2, length=100)
+beta_sequence <- seq(0, 0.5, length=100)
+
+z <- matrix(NA, nrow = length(alpha_sequence), ncol=length(beta_sequence))
+for (i in 1:length(alpha_sequence)) {
+  for (j in 1:length(beta_sequence)) {
+    z[i,j] = rho.to.plot(alpha_sequence[i],beta_sequence[j])
+  }
+}
+
+# 3D plot with narrowed sequence
+persp(alpha_sequence,beta_sequence,z,theta = -30, phi=-10,
+      col='yellow',expand=1,
+      ticktype = 'detailed')
+# heat map with contour plot with narrowed sequence
+image(alpha_sequence,beta_sequence,z,col=heat.colors(100))
+contour(alpha_sequence,beta_sequence,z,add=TRUE, levels=seq(0.05,0.85,0.1))
+```
+
+\newpage
+### (d)
+$$
+\psi(\alpha,\beta)=
+\begin{bmatrix}
+\sum_{u\in\mathcal{P}}\frac{-2\left(y_u-\left[1-\frac{1}{\alpha+\beta x_u}
+\right]\right)}{(\alpha+\beta x_u)^2}\\
+\sum_{u\in\mathcal{P}}\frac{-2\left(y_u-\left[1-\frac{1}{\alpha+\beta x_u}
+\right]\right) x_u}{(\alpha+\beta x_u)^2}
+\end{bmatrix}
+$$
+
+```{R}
+createpsi <- function(x,y){
+  function(theta){
+    alpha <- theta[1]
+    beta <- theta[2]
+    (-2)*c(sum((y-(1-1/(alpha+beta*x)))/(alpha+beta*x)^2),
+           sum((y-(1-1/(alpha+beta*x)))*x/(alpha+beta*x)^2))
+  }
+}
+createpsiPrime <- function(x,y){
+  function(theta){
+    alpha <- theta[1]
+    beta <- theta[2]
+    val = matrix(0,nrow=length(theta),ncol=length(theta))
+    val[1,1]=sum(4*(y-(1-1/(alpha+beta*x)))/
+                   (alpha+beta*x)^3+2/(alpha+beta*x)^4)
+    val[1,2]=sum(4*x*(y-(1-1/(alpha+beta*x)))/
+                   (alpha+beta*x)^3+2*x/(alpha+beta*x)^4)
+    val[2,1]=sum(4*x*(y-(1-1/(alpha+beta*x)))/
+                   (alpha+beta*x)^3+2*x/(alpha+beta*x)^4)
+    val[2,2]=sum(4*x^2*(y-(1-1/(alpha+beta*x)))/
+                   (alpha+beta*x)^3+2*x^2/(alpha+beta*x)^4)
+    return(val)
+  }
+}
+
+# modified from lecture notes in the same style as Tutorial 4.
+NewtonRaphson <- function(theta, 
+                          psiFn, psiPrimeFn, dim, 
+                          testConvergenceFn = testConvergence,
+                          maxIterations = 100, tolerance = 1E-6, relative = FALSE 
+) {
+  if (missing(theta)) {
+    ## need to figure out the dimensionality
+    if (missing(dim)) {dim <- length(psiFn())}
+    theta <- rep(0, dim)
+  }
+  converged <- FALSE
+  i <- 0
+    while (!converged & i <= maxIterations) {
+    thetaNew <- theta - solve(psiPrimeFn(theta), psiFn(theta))
+    converged <- testConvergenceFn(thetaNew, theta, tolerance = tolerance,  
+                                   relative = relative)
+
+    theta <- thetaNew
+    i <- i + 1
+  }
+  ## Return last value and whether converged or not
+  list(theta = theta, converged = converged, iteration = i, fnValue = psiFn(theta)
+       )
+}
+
+testConvergence <- function(thetaNew, thetaOld, tolerance = 1E-10, relative=FALSE) {
+   sum(abs(thetaNew - thetaOld)) < if (relative) tolerance * sum(abs(thetaOld)) else tolerance
+}
+
+psi <- createpsi(infection$Infected, infection$Deceased.Prop)
+psiPrime <- createpsiPrime(infection$Infected,
+                           infection$Deceased.Prop)
+
+result1 <- NewtonRaphson(theta=c(2,3),
+                           psiFn = psi,
+                           psiPrimeFn = psiPrime,
+                           maxIterations = 200)
+result1
+
+result2 <- NewtonRaphson(theta=c(3, 0.2),
+                           psiFn = psi,
+                           psiPrimeFn = psiPrime,
+                           maxIterations = 200)
+result2
+
+result3 <- NewtonRaphson(theta=c(1.7, 0.2), # educated guess based on heat plot
+                           psiFn = psi,
+                           psiPrimeFn = psiPrime,
+                           maxIterations = 200)
+result3
+                  
+```
+
+```{R}
+# result 1
+rho.to.plot(result1$theta[1],result1$theta[2])
+# result 2
+rho.to.plot(result2$theta[1],result2$theta[2])
+# result 3 (educated guess)
+rho.to.plot(result3$theta[1],result3$theta[2])
+
+# comments:
+# case3 (educated guess) is the most appropriate initial values, since the
+# function value calculated is the smallest.
+```
+
+\newpage
+### (e)
+```{R}
+# case1
+y1_hat <- 1-1/(result1$theta[1] + result1$theta[2]*infection$Infected)
+plot(infection$Deceased.Prop, y1_hat, 
+     main="Observed y_u VS. y_u_hat (case1)")
+abline(a=0,b=1)
+
+# case2
+y2_hat <- 1-1/(result2$theta[1] + result2$theta[2]*infection$Infected)
+plot(infection$Deceased.Prop, y2_hat, 
+     main="Observed y_u VS. y_u_hat (case2)")
+abline(a=0,b=1) 
+
+# case3
+y3_hat <- 1-1/(result3$theta[1] + result3$theta[2]*infection$Infected)
+plot(infection$Deceased.Prop, y3_hat, 
+     main="Observed y_u VS. y_u_hat (case3)")
+abline(a=0,b=1)
+
+# comments:
+# Based on the plots for case1 and case2, I learn that points are not lying
+# along the diagonal line, which means that the estimates are not converging
+# to the true value.
+# Based on the plot for case3, I find that points lying along the diagonal line
+# well, which shows that the estimates are converging to the true value.
+# Therefore, I learn that the case3 is the most appropriate.
+```
+
+\newpage
+### (f)
+```{R warning=FALSE}
+model <- lm(1/(1-Deceased.Prop) ~ Infected, data = infection)
+summary(model)
+
+plot(infection$Deceased.Prop, 1-1/fitted(model),
+     xlab="Observed value",
+     ylab="Fitted value", main="Observed value VS. Fitted value")
+abline(a=0,b=1) # diagonal line
+```
+
+\newpage
+## Question4
+
+### (a)
+```{R}
+createIncusionProbFn <- function(N, samplSize){
+  n <- samplSize
+  f <- function(u) rep(1-((N-1)/N)^n, length(u))
+  return(f)
+}
+
+createJointInclusionProbFn <- function(N,samplSize,samp){
+  n <- samplSize
+  f <- function(u,v) ifelse( u==v | samp[u]==samp[v],
+                             1-((N-1)/N)^n,
+                             1-2*((N-1)/N)^n+((N-2)/N)^n)
+  return(f)
+}
+
+createHTestimator <- function(pi_u_fn) {
+  f <- function(sample_idx, variateFn)
+    sum(sapply(sample_idx, function(u) variateFn(u)/ pi_u_fn(u)))
+  return(f)
+}
+
+createHTVarianceEstimator <- function(pi_u_fn, pi_uv_fn) {
+  f = function(sample_idx, variateFn) {
+    sum(outer(sample_idx, sample_idx, FUN = function(u, v) {
+      pi_u     <- pi_u_fn(u)
+      pi_v     <- pi_u_fn(v)
+      y_u      <- variateFn(u)
+      y_v      <- variateFn(v)
+      pi_uv    <- pi_uv_fn(u, v)
+      Delta_uv <- pi_uv - pi_u * pi_v
+      return((Delta_uv * y_u * y_v) / (pi_uv * pi_u * pi_v))
+    }))
+  }
+  return(f)
+}
+
+N <- 486
+n <- nrow(infection)
+inclusionProb <- createIncusionProbFn(N, n)
+inclusionJointProb <- createJointInclusionProbFn(N, n, infection$Infected)
+deathHTestimator <- createHTestimator(inclusionProb)
+HTVarianceEstimator <- createHTVarianceEstimator(inclusionProb, inclusionJointProb)
+
+createGenericVariateFn <- function(popData, expression, ...) {
+  # Save extra arguments to extra_args
+  extra_args <- list(...)
+  # A formality; instead of evaluating, return the unevaluated expression.
+  evalable <- substitute(expression)
+  # Evaluate expression in the context of popData, restricted to indices u, and any extra_args.
+  f <- function(u) with(extra_args, eval(evalable, popData[u,]))
+  return(f)
+}
+
+deathNum <- createGenericVariateFn(infection, Infected*Deceased.Prop)
+
+# estimate of death
+estimate <- deathHTestimator(1:100, deathNum)*12.5
+estimate
+# standard error
+se <- sqrt(HTVarianceEstimator(1:100, deathNum))*12.5
+se
+# 95% C.I. = (estimate +- a*se) where a = 1.96 for 95%
+a <- 1.96
+c(estimate-a*se, estimate+a*se)
+```
+
+\newpage
+### (b)
+$$
+\pi_u = 1-\Pr(u\notin S) = 1-(1-w_u)^n
+$$
+
+$u\neq v$:
+$$
+\pi_{uv} = 1-(1-w_u)^n - (1-w_v)^n + (1-w_u-w_v)^n
+$$
+
+$u = v$:
+$$
+\pi_{uv} = \pi_u = \pi_v
+$$
+
+\newpage
+### (c)
+```{R}
+w = c(0.0027, 0.016, 0.0069, 0.0011, 0.0066, 0.0108, 0.003, 0.0043,
+    0.0142, 0.0016, 0.0122, 4e-04, 0.0047, 0.014, 0.0086, 0.0169,
+    0.0165, 0.0118, 0.0043, 2e-04, 0.0142, 0.0092, 0.0162, 0.0106,
+    0.0588, 0.0135, 0.0025, 0.0011, 0.0109, 0.0085, 0.0027, 0.0112,
+    0.0127, 5e-04, 0.0082, 0.0085, 0.0066, 0.0125, 0.012, 0.0116,
+    0.0089, 0.016, 0.0108, 9e-04, 0.0088, 0.0066, 0.0588, 0.0044,
+    8e-04, 0.002, 0.01, 0.0101, 0.0012, 0.0135, 0.0103, 0.0058,
+    0.004, 0.0088, 0.0057, 0.0049, 0.0111, 0.0117, 0.0081, 0.014,
+    0.0079, 0.0134, 0.0149, 0.0042, 0.0109, 0.0072, 0.0109, 0.0082,
+    5e-04, 0.002, 0.0588, 0.0025, 0.0018, 0.0105, 0.015, 0.0148,
+    0.0042, 0.0025, 0.0061, 0.0111, 0.017, 0.015, 0.0056, 0.0011,
+    0.0072, 0.007, 0.015, 0.0081, 0.016, 0.0057, 0.0029, 0.0012,
+    0.0588, 8e-04, 2e-04, 0.005)
+
+createIncusionProbFn_WSRSWR <- function(N, sampSize, weight) {
+  n <- sampSize
+  f <- function(u) 1-(1-weight[u])^n
+  return(f)
+}
+
+createJointInclusionProbFn_WSRSWR <- function(N, sampSize, samp, weight){
+  n <- sampSize
+  f <- function(u,v) ifelse(u == v | samp[u]==samp[v], 1-(1-weight[u])^n,
+                            1-(1-weight[u])^n-(1-weight[v])^n
+                            +(1-weight[u]-weight[v])^n)
+  return(f)
+}
+  
+inclusionProb_WSRSWR <- createIncusionProbFn_WSRSWR(N, n, w)
+inclusionJointProb_WSRSWR <- createJointInclusionProbFn_WSRSWR(N, 
+                                                               n, infection$Infected, w)
+deathHTestimator_WSRSWR <- createHTestimator(inclusionProb_WSRSWR)
+HTVarianceEstimator_WSRSWR <- createHTVarianceEstimator(pi_u_fn = inclusionProb_WSRSWR,
+                                                 pi_uv_fn = inclusionJointProb_WSRSWR)
+deathNum_WSRSWR <- createGenericVariateFn(infection, Infected*Deceased.Prop)
+
+# estimate of death
+estimate_WSRSWR <- deathHTestimator_WSRSWR(1:100, deathNum_WSRSWR)*12.5
+estimate_WSRSWR
+# standard error
+se_WSRSWR <- sqrt(HTVarianceEstimator_WSRSWR(1:100, deathNum_WSRSWR))*12.5
+se_WSRSWR
+# 95% C.I.
+a <- 1.96
+c(estimate_WSRSWR-a*se_WSRSWR, estimate_WSRSWR+a*se_WSRSWR)
+```
+
+\newpage
+### (d)
+Based on the results, the WSRSWR sampling protocol is better. Since WSRSWR has
+taken the sampling weight into consideration, which will make the results much
+more accurate.
